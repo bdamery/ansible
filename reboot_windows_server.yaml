@@ -1,0 +1,9 @@
+---
+- name: Reboot Windows servers
+  gather_facts: yes
+  tasks:
+    - name: Reboot the Windows machine
+      win_reboot:
+        reboot_timeout: 600
+        test_command: hostname
+      register: reboot_status
