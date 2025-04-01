@@ -1,5 +1,6 @@
 ---
 - name: Reboot Windows servers
+  hosts: WindowsServers
   gather_facts: yes
   tasks:
     - name: Reboot the Windows machine
