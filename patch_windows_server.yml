@@ -1,19 +1,21 @@
 ---
-- name: Patch Windows Server
-  hosts: all
+- name: Patch Windows Server 2019 and always reboot
+  hosts: windows
   gather_facts: no
   tasks:
 
-    - name: Install all available Windows updates
+    - name: Install Windows updates (Security, Critical, Rollups)
       win_updates:
         category_names:
           - SecurityUpdates
           - CriticalUpdates
           - UpdateRollups
-        reboot: yes
-      register: update_result
-
-    - name: Reboot the server if required
+        state: installed
+        reboot: no  # We'll control the reboot ourselves
+      register: patch_result
+      
+    - name: Force reboot after patching (always)
       win_reboot:
         reboot_timeout: 120
-      when: update_result.reboot_required
+        pre_reboot_delay: 30
+        post_reboot_delay: 60
