@@ -1,6 +1,6 @@
 ---
 - name: Patch Windows Server 2019 and always reboot
-  hosts: windows
+  hosts: all
   gather_facts: no
   tasks:
 
