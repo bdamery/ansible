@@ -1,0 +1,12 @@
+---
+- name: Update DNS entry in Windows hosts file
+  hosts: windows_servers
+  gather_facts: false
+  tasks:
+    - name: Ensure DNS entry is present in hosts file
+      ansible.windows.win_lineinfile:
+        path: 'C:\Windows\System32\drivers\etc\hosts'
+        regexp: '.*\s+myinternalapp.local$'
+        line: '192.168.1.100 myinternalapp.local'
+        create: yes
+        backup: yes
