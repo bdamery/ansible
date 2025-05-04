@@ -1,6 +1,6 @@
 ---
 - name: Update DNS entry in Windows hosts file
-  hosts: windows_servers
+  hosts: all
   gather_facts: false
   tasks:
     - name: Ensure DNS entry is present in hosts file
