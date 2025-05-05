@@ -4,9 +4,8 @@
   gather_facts: false
   tasks:
     - name: Ensure DNS entry is present in hosts file
-      ansible.windows.win_lineinfile:
+      win_lineinfile:
         path: 'C:\Windows\System32\drivers\etc\hosts'
         regexp: '.*\s+myinternalapp.local$'
-        line: '52.43.69.71 ec2-50-112-216-145.us-west-2.compute.amazonaws.com'
-        create: yes
-        backup: yes
+        line: "52.43.69.71 ec2-50-112-216-145.us-west-2.compute.amazonaws.com"
+        create: no
