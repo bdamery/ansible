@@ -1,11 +1,15 @@
 ---
-- name: Update DNS entry in Windows hosts file
+- name: Update DNS entry in Windows hosts file using PowerShell
   hosts: all
   gather_facts: false
   tasks:
     - name: Ensure DNS entry is present in hosts file
-      win_lineinfile:
-        path: 'C:\Windows\System32\drivers\etc\hosts'
-        regexp: '.*\s+myinternalapp.local$'
-        line: "52.43.69.71 ec2-50-112-216-145.us-west-2.compute.amazonaws.com"
-        create: no
+      win_shell: |
+        $hostsPath = "C:\Windows\System32\drivers\etc\hosts"
+        $entry = "52.43.69.71 ec2-50-112-216-145.us-west-2.compute.amazonaws.com"
+        $pattern = ".*\s+myinternalapp.local$"
+
+        $content = Get-Content -Path $hostsPath
+        if ($content -notmatch $pattern) {
+          Add-Content -Path $hostsPath -Value $entry
+        }
