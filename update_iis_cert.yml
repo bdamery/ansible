@@ -1,49 +1,45 @@
 ---
-- name: Install new SSL certificate on IIS website
+- name: Install a PFX SSL certificate and bind it to an IIS site
   hosts: all
   gather_facts: no
-  vars:
-    cert_file: "files/mycert.pfx"
-    cert_password: "{{ vault_cert_password }}"
-    iis_site_name: "MyWebsite"
-    cert_friendly_name: "MyNewCert"
-    cert_store: "WebHosting"
-    binding_ip: "*"
-    binding_port: 443
 
   tasks:
-    - name: Copy certificate to remote server
+    - name: Create temp folder on remote host
+      ansible.windows.win_file:
+        path: "C:\\Temp"
+        state: directory
+
+    - name: Copy PFX certificate to remote host
       ansible.windows.win_copy:
-        src: "{{ cert_file }}"
+        src: "files/mycert.pfx"
         dest: "C:\\Temp\\mycert.pfx"
 
-    - name: Import certificate into local machine store
+    - name: Import certificate into WebHosting store
       community.windows.win_certificate_store:
         path: "C:\\Temp\\mycert.pfx"
-        password: "{{ cert_password }}"
-        store_name: "{{ cert_store }}"
+        password: "MySecretPassword"
+        store_name: "WebHosting"
         state: present
-        key_exportable: yes
-        friendly_name: "{{ cert_friendly_name }}"
+        friendly_name: "MyNewCert"
         valid_only: yes
 
-    - name: Get thumbprint of the installed certificate
+    - name: Get thumbprint of installed certificate
       community.windows.win_certificate_info:
-        store_name: "{{ cert_store }}"
-        friendly_name: "{{ cert_friendly_name }}"
+        store_name: "WebHosting"
+        friendly_name: "MyNewCert"
       register: cert_info
 
-    - name: Bind certificate to IIS website
+    - name: Bind certificate to IIS site
       community.windows.win_iis_webbinding:
-        name: "{{ iis_site_name }}"
+        name: "MyWebsite"
         protocol: https
-        port: "{{ binding_port }}"
-        ip: "{{ binding_ip }}"
+        port: 443
+        ip: "*"
         certificate_hash: "{{ cert_info.thumbprints[0] }}"
-        certificate_store_name: "{{ cert_store }}"
+        certificate_store_name: "WebHosting"
         state: present
 
-    - name: Remove temporary certificate file
+    - name: Delete temporary PFX file
       ansible.windows.win_file:
         path: "C:\\Temp\\mycert.pfx"
         state: absent
