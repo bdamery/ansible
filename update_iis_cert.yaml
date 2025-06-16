@@ -1,0 +1,49 @@
+---
+- name: Install new SSL certificate on IIS website
+  hosts: all
+  gather_facts: no
+  vars:
+    cert_file: "files/mycert.pfx"
+    cert_password: "{{ vault_cert_password }}"
+    iis_site_name: "MyWebsite"
+    cert_friendly_name: "MyNewCert"
+    cert_store: "WebHosting"
+    binding_ip: "*"
+    binding_port: 443
+
+  tasks:
+    - name: Copy certificate to remote server
+      ansible.windows.win_copy:
+        src: "{{ cert_file }}"
+        dest: "C:\\Temp\\mycert.pfx"
+
+    - name: Import certificate into local machine store
+      community.windows.win_certificate_store:
+        path: "C:\\Temp\\mycert.pfx"
+        password: "{{ cert_password }}"
+        store_name: "{{ cert_store }}"
+        state: present
+        key_exportable: yes
+        friendly_name: "{{ cert_friendly_name }}"
+        valid_only: yes
+
+    - name: Get thumbprint of the installed certificate
+      community.windows.win_certificate_info:
+        store_name: "{{ cert_store }}"
+        friendly_name: "{{ cert_friendly_name }}"
+      register: cert_info
+
+    - name: Bind certificate to IIS website
+      community.windows.win_iis_webbinding:
+        name: "{{ iis_site_name }}"
+        protocol: https
+        port: "{{ binding_port }}"
+        ip: "{{ binding_ip }}"
+        certificate_hash: "{{ cert_info.thumbprints[0] }}"
+        certificate_store_name: "{{ cert_store }}"
+        state: present
+
+    - name: Remove temporary certificate file
+      ansible.windows.win_file:
+        path: "C:\\Temp\\mycert.pfx"
+        state: absent
