@@ -1,5 +1,5 @@
 - name: Import test.pfx and bind to IIS site 'MyWebsite'
-  hosts: windows
+  hosts: all
   gather_facts: no
   tasks:
     - name: Copy test.pfx to remote host
