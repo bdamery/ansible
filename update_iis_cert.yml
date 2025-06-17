@@ -1,45 +1,37 @@
----
-- name: Install a PFX SSL certificate and bind it to an IIS site
-  hosts: all
+- name: Import test.pfx and bind to IIS site 'MyWebsite'
+  hosts: windows
   gather_facts: no
-
   tasks:
-    - name: Create temp folder on remote host
-      ansible.windows.win_file:
-        path: "C:\\Temp"
-        state: directory
-
-    - name: Copy PFX certificate to remote host
+    - name: Copy test.pfx to remote host
       ansible.windows.win_copy:
-        src: "files/mycert.pfx"
-        dest: "C:\\Temp\\mycert.pfx"
+        src: ./test.pfx
+        dest: C:\Temp\test.pfx
 
-    - name: Import certificate into WebHosting store
-      community.windows.win_certificate_store:
-        path: "C:\\Temp\\mycert.pfx"
-        password: "MySecretPassword"
-        store_name: "WebHosting"
-        state: present
-        friendly_name: "MyNewCert"
-        valid_only: yes
+    - name: Import test.pfx into LocalMachine\My store
+      ansible.windows.win_shell: |
+        $certPassword = ConvertTo-SecureString "Test1234" -AsPlainText -Force
+        Import-PfxCertificate -FilePath "C:\Temp\test.pfx" -CertStoreLocation "Cert:\LocalMachine\My" -Password $certPassword
 
-    - name: Get thumbprint of installed certificate
-      community.windows.win_certificate_info:
-        store_name: "WebHosting"
-        friendly_name: "MyNewCert"
-      register: cert_info
+    - name: Get thumbprint of imported certificate
+      ansible.windows.win_shell: |
+        $cert = Get-PfxCertificate -FilePath "C:\Temp\test.pfx"
+        Write-Output $cert.Thumbprint
+      register: cert_thumbprint_raw
 
-    - name: Bind certificate to IIS site
-      community.windows.win_iis_webbinding:
-        name: "MyWebsite"
-        protocol: https
-        port: 443
-        ip: "*"
-        certificate_hash: "{{ cert_info.thumbprints[0] }}"
-        certificate_store_name: "WebHosting"
-        state: present
+    - name: Set thumbprint fact
+      set_fact:
+        cert_thumbprint: "{{ cert_thumbprint_raw.stdout | trim }}"
 
-    - name: Delete temporary PFX file
+    - name: Add HTTPS binding to IIS site 'MyWebsite'
+      ansible.windows.win_shell: |
+        Import-Module WebAdministration
+        New-WebBinding -Name "MyWebsite" -Protocol https -Port 443 -IPAddress "*" -HostHeader ""
+        Get-WebBinding -Name "MyWebsite" -Protocol "https" | ForEach-Object {
+          $binding = $_
+          $binding.AddSslCertificate("{{ cert_thumbprint }}", "My")
+        }
+
+    - name: Remove the copied certificate file
       ansible.windows.win_file:
-        path: "C:\\Temp\\mycert.pfx"
+        path: C:\Temp\test.pfx
         state: absent
