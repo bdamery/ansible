@@ -28,7 +28,7 @@
         New-WebBinding -Name "MyWebsite" -Protocol https -Port 443 -IPAddress "*" -HostHeader ""
         Get-WebBinding -Name "MyWebsite" -Protocol "https" | ForEach-Object {
           $binding = $_
-          $binding.AddSslCertificate("{{ cert_thumbprint }}", "My")
+          $binding.AddSslCertificate("A578F12095DECBAFCBC7C323CB7B2FB5B9ECA646", "My")
         }
 
     - name: Remove the copied certificate file
