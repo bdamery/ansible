@@ -1,0 +1,8 @@
+- name: Ensure HelloWorld IIS website is started
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Start HelloWorld IIS site
+      win_iis_website:
+        name: "HelloWorld"
+        state: started
